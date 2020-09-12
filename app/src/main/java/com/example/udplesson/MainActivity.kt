@@ -17,6 +17,7 @@ import android.widget.Button
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import kotlinx.android.synthetic.main.activity_main.*
 import java.net.DatagramPacket
 
 
@@ -112,9 +113,20 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     //=====================================================
     private fun sendUDPBroadcast() {
         isClosed = false
+        val hexselect = checkBoxHexselect.isChecked
         mUDPBroadCast.open(SEND_PORT, DEST_PORT) //打开广播
-  //      val buffer: ByteArray = sendBuffer.toByteArray()            //資料放在buffer送
-        val buffer = ByteArray(7)                       // 16進制傳送
+        var buffer: ByteArray = sendBuffer.toByteArray()        //ascii 傳送
+        var bufferHex =  ByteArray(7)
+              /* 模擬16進制傳送 已確定成功了, 其實它跟 tcp 的傳法有點像*/
+            bufferHex[0] = 0x55
+            bufferHex[1] = 0x44
+            bufferHex[2] = 0x00
+            bufferHex[3] = 0x02
+            bufferHex[4] = 0x0a
+            bufferHex[5] = 0xfa - 256
+            bufferHex[6] = 0x90 - 256
+
+
         Thread(Runnable {
             while (!isClosed) {
                 try {
@@ -122,17 +134,14 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
-                /* 模擬16進制傳送 已確定成功了, 其實它跟 tcp 的傳法有點像*/
-                buffer[0] = 0x55
-                buffer[1] = 0x44
-                buffer[2] = 0x00
-                buffer[3] = 0x02
-                buffer[4] = 0x0a
-                buffer[5] = 0xfa-256
-                buffer[6] = 0x90-256
+                if (!hexselect ) {
+                    mUDPBroadCast.sendPacket(buffer) //发送广播包            10進制傳送
+                    addLog("$TAG data: ${String(buffer)}")              //累積顯示
+                } else  {
+                    mUDPBroadCast.sendPacket(bufferHex) //发送广播包      16進制傳送
+                    addLog("$TAG data: ${String(bufferHex)}")              //累積顯示
+                }
 
-                mUDPBroadCast.sendPacket(buffer) //发送广播包
-                addLog("$TAG data: ${String(buffer)}")              //累積顯示
             }
             mUDPBroadCast.close() //关闭广播
         }).start()
