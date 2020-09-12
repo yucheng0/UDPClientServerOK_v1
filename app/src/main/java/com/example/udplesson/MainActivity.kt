@@ -7,6 +7,9 @@ udp , 它不像tcp 要知道對方的網址, 它是可以不管對方IP的(已�
 目前只接收ascii 無法接收hex code
 sendclose / mcloseBTn 呼叫都是同一個函數都是close 所以根本沒什麼差別
 
+ senddata -> mUDPBroadCast.open(SEND_PORT, DEST_PORT)     //SEND_PORT = lOCAL_PORT 功能
+ receive ->  mUDPBroadCaster.open(LOCAL_PORT, DEST_PORT)     //設定socket 用
+
  */
 import android.os.Bundle
 import android.view.View
@@ -19,8 +22,8 @@ import java.net.DatagramPacket
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
     val TAG: String = "myTag"
-    val LOCAL_PORT: Int = 8009 // 12348 //8009
-    val DEST_PORT: Int = 8008    //目的是對方
+    val LOCAL_PORT: Int = 8009 // 12348 //8009  （有用到, 對方要送資料給)
+    val DEST_PORT: Int = 8008    //目的是對方 (有用到, 我送資料給對方）
     val SEND_PORT: Int = 8070    // 指的是自己的local  （好像沒用到）
 
     lateinit var mRecvBtn: Button
@@ -110,7 +113,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     private fun sendUDPBroadcast() {
         isClosed = false
         mUDPBroadCast.open(SEND_PORT, DEST_PORT) //打开广播
-        val buffer: ByteArray = sendBuffer.toByteArray()
+  //      val buffer: ByteArray = sendBuffer.toByteArray()            //資料放在buffer送
+        val buffer = ByteArray(7)                       // 16進制傳送
         Thread(Runnable {
             while (!isClosed) {
                 try {
@@ -118,8 +122,17 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
+                /* 模擬16進制傳送 已確定成功了, 其實它跟 tcp 的傳法有點像*/
+                buffer[0] = 0x55
+                buffer[1] = 0x44
+                buffer[2] = 0x00
+                buffer[3] = 0x02
+                buffer[4] = 0x0a
+                buffer[5] = 0xfa-256
+                buffer[6] = 0x90-256
+
                 mUDPBroadCast.sendPacket(buffer) //发送广播包
-                addLog("$TAG data: ${String(buffer)}")
+                addLog("$TAG data: ${String(buffer)}")              //累積顯示
             }
             mUDPBroadCast.close() //关闭广播
         }).start()
